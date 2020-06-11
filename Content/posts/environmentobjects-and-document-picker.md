@@ -12,7 +12,6 @@ For my current project, I needed to have some UIKit code which manipulated an `@
 My solution is to bring the handling of selected documents up into SwiftUI. For starters, let me show you the simplest part of my code, the picker delegate:
 
 ```swift
-
 typealias URLS = ([URL]) -> ()
 typealias voidFunc = () -> ()
 

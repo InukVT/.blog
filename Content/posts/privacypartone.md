@@ -4,6 +4,7 @@ slug: privacypartone
 date: 2019-05-06 17:11
 date_updated: 2019-05-09T17:43:48.000Z
 tags: blog, privacy, google, facebook, security
+author: Hilli
 description: In this three part series we will be looking at how privacy is handled in 2019. Part one is an overview of google and facebook, and how they affect privacy.
 ---
 

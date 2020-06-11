@@ -1,1 +1,1 @@
-# Welcome to InukBlog!
+# Welcome to Inuk Blog

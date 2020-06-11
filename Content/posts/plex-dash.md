@@ -12,25 +12,41 @@ I initially wanted to spend this month's server post to complain about the state
 # See what's playing
 
 In the app, you can see what's currently being played in your chosen server.
-![](/content/images/2020/05/IMG_3421.png)What's Playing
+
+![](/content/images/2020/05/IMG_3421.png)
+
+_What's Playing_
+
 You can even get history of the media and user as well as edit metadata live from the now playing screen by pressing the three dots icon:
-![](/content/images/2020/05/IMG_3423.png)Live metadata
+
+![](/content/images/2020/05/IMG_3423.png)
+
+_Live metadata_
 # Search
 
 The search field will bring up anything that matches the keywords you typed in:
-![](/content/images/2020/05/IMG_3425.png)Searching for Beyond the Boundary
+![](/content/images/2020/05/IMG_3425.png)
+
+_Searching for Beyond the Boundary_
 # Top Charts
 
 You can also get insight into the most popular media on your Plex server.  This is useful to better cater your site to your audience.  The downside, however, is that the history doesn't go as far back as one might like.  I'm not sure whether this is because my Plex server deletes the data or if they've only prepared the data for a short while, but as is, it's usefulness is limited.
-![](/content/images/2020/05/IMG_3427.png)Smile Down the Runway is top chart
+
+![](/content/images/2020/05/IMG_3427.png)
+
+_Smile Down the Runway is top chart_
 # Libraries
 
 In the library tab you can view and manage your libraries.
 
 ## Overview
-![](/content/images/2020/05/IMG_3429.png)Libaries overview
+![](/content/images/2020/05/IMG_3429.png)
+
+_Libaries overview_
+
 In the overview you can see and edit your libraries.
 ![](/content/images/2020/05/IMG_3431.png)
+
 You, also, scan your libraries files from here; something I have personally done a fair bit of from the web interface on my phone, which is not the best experience in the world, making this is a welcome addition.
 
 ## Cards View

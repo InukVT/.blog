@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="og:site_name" content="Inuk Blog"/><link rel="canonical" href="https://www.inuk.blog/posts/responsive-darkmode-uikit"/><meta name="twitter:url" content="https://www.inuk.blog/posts/responsive-darkmode-uikit"/><meta name="og:url" content="https://www.inuk.blog/posts/responsive-darkmode-uikit"/><title>Responsive Dark Mode in UIKit | Inuk Blog</title><meta name="twitter:title" content="Responsive Dark Mode in UIKit | Inuk Blog"/><meta name="og:title" content="Responsive Dark Mode in UIKit | Inuk Blog"/><meta name="description" content="Tech with a human perspective"/><meta name="twitter:description" content="Tech with a human perspective"/><meta name="og:description" content="Tech with a human perspective"/><meta name="twitter:card" content="summary"/><link rel="stylesheet" href="/styles.css" type="text/css"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><link rel="shortcut icon" href="/images/favicon.png" type="image/png"/><link rel="alternate" href="/feed.rss" type="application/rss+xml" title="Subscribe to Inuk Blog"/></head><body class="item-page"><header><div class="wrapper"><a class="site-name" href="/">Inuk Blog</a></div></header><div class="wrapper"><article><div class="content"><p>I was looking for a way to bring out the AirPlay menu in SwiftUI when I found this <a href="https://stackoverflow.com/a/60085342/3588557">StackOverflow Answer</a>. Issue with that solution is the AirPlay button not changing colorscheme when the rest of the system does: <img src="/content/images/2020/05/output-2.gif"/> There's a quick and easy fix however! <code>UIKit</code> has a nifty <code>traitCollectionDidChange(_:)</code> function, which gets called when — amongst other — dark mode turns on. So to fix this interesting bug, you have to bring <code>button</code> out to the class, and change the colour in <code>traitCollectionDidChange(_:)</code> so it looks as follows:</p><pre><code><span class="keyword">class</span> AirPLayViewController: <span class="type">UIViewController</span> {
+    <span class="keyword">let</span> button = <span class="type">UIButton</span>()
+    <span class="keyword">override func</span> viewDidLoad() {
+        <span class="keyword">super</span>.<span class="call">viewDidLoad</span>()
+        
+        <span class="keyword">let</span> isDarkMode = <span class="keyword">self</span>.<span class="property">traitCollection</span>.<span class="property">userInterfaceStyle</span> == .<span class="dotAccess">dark</span>
+        
+        
+        <span class="keyword">let</span> boldConfig = <span class="type">UIImage</span>.<span class="type">SymbolConfiguration</span>(scale: .<span class="dotAccess">large</span>)
+        <span class="keyword">let</span> boldSearch = <span class="type">UIImage</span>(systemName: <span class="string">"airplayaudio"</span>,
+                                 withConfiguration: boldConfig)
+
+        button.<span class="call">setImage</span>(boldSearch, for: .<span class="dotAccess">normal</span>)
+        button.<span class="property">frame</span> = <span class="type">CGRect</span>(x: <span class="number">0</span>, y: <span class="number">0</span>, width: <span class="number">40</span>, height: <span class="number">40</span>)
+        button.<span class="property">tintColor</span> = isDarkMode ? .<span class="dotAccess">white</span> : .<span class="dotAccess">black</span>
+
+        button.<span class="call">addTarget</span>(<span class="keyword">self</span>,
+                         action: <span class="keyword">#selector</span>(<span class="keyword">self</span>.<span class="call">showAirPlayMenu</span>(<span class="keyword">_</span>:)),
+                         for: .<span class="dotAccess">touchUpInside</span>)
+        
+        <span class="keyword">self</span>.<span class="property">view</span>.<span class="call">addSubview</span>(button)
+    }
+    
+    <span class="keyword">override func</span> traitCollectionDidChange(<span class="keyword">_</span> previousTraitCollection: <span class="type">UITraitCollection</span>?) {
+        <span class="keyword">super</span>.<span class="call">traitCollectionDidChange</span>(previousTraitCollection)
+        <span class="keyword">let</span> isDarkMode = <span class="keyword">self</span>.<span class="property">traitCollection</span>.<span class="property">userInterfaceStyle</span> == .<span class="dotAccess">dark</span>
+        button.<span class="property">tintColor</span> = isDarkMode ? .<span class="dotAccess">white</span> : .<span class="dotAccess">black</span>
+    }
+    
+    <span class="comment">// copied from https://stackoverflow.com/a/44909445/7974174</span>
+    <span class="keyword">@objc func</span> showAirPlayMenu(<span class="keyword">_</span> sender: <span class="type">UIButton</span>){ 
+        <span class="keyword">let</span> rect = <span class="type">CGRect</span>(x: <span class="number">0</span>, y: <span class="number">0</span>, width: <span class="number">0</span>, height: <span class="number">0</span>)
+        <span class="keyword">let</span> airplayVolume = <span class="type">MPVolumeView</span>(frame: rect)
+        airplayVolume.<span class="property">showsVolumeSlider</span> = <span class="keyword">false
+        self</span>.<span class="property">view</span>.<span class="call">addSubview</span>(airplayVolume)
+        <span class="keyword">for</span> view: <span class="type">UIView</span> <span class="keyword">in</span> airplayVolume.<span class="property">subviews</span> {
+            <span class="keyword">if let</span> button = view <span class="keyword">as</span>? <span class="type">UIButton</span> {
+                button.<span class="call">sendActions</span>(for: .<span class="dotAccess">touchUpInside</span>)
+                <span class="keyword">break</span>
+            }
+        }
+        airplayVolume.<span class="call">removeFromSuperview</span>()
+    }
+}
+</code></pre><p>I hope my quick tip helped, if only for a bit!</p></div><span>Tagged with: </span><ul class="tag-list"><li><a href="/tags/swift">swift</a></li><li><a href="/tags/swiftui">swiftui</a></li><li><a href="/tags/apple">apple</a></li><li><a href="/tags/ios">iOS</a></li></ul></article></div><footer><p>Proudly generated using <a href="https://github.com/johnsundell/publish">Publish</a></p><p><a href="https://discord.gg/CxPyCCJ">Discord</a> | <a href="/feed.rss">RSS</a></p></footer></body></html>

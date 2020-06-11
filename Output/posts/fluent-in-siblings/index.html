@@ -1,0 +1,103 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="og:site_name" content="Inuk Blog"/><link rel="canonical" href="https://www.inuk.blog/posts/fluent-in-siblings"/><meta name="twitter:url" content="https://www.inuk.blog/posts/fluent-in-siblings"/><meta name="og:url" content="https://www.inuk.blog/posts/fluent-in-siblings"/><title>Siblings in Fluent 4 | Inuk Blog</title><meta name="twitter:title" content="Siblings in Fluent 4 | Inuk Blog"/><meta name="og:title" content="Siblings in Fluent 4 | Inuk Blog"/><meta name="description" content="Siblings are not difficult to work with in Fluent 4, so here's a short how-to."/><meta name="twitter:description" content="Siblings are not difficult to work with in Fluent 4, so here's a short how-to."/><meta name="og:description" content="Siblings are not difficult to work with in Fluent 4, so here's a short how-to."/><meta name="twitter:card" content="summary"/><link rel="stylesheet" href="/styles.css" type="text/css"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><link rel="shortcut icon" href="/images/favicon.png" type="image/png"/><link rel="alternate" href="/feed.rss" type="application/rss+xml" title="Subscribe to Inuk Blog"/></head><body class="item-page"><header><div class="wrapper"><a class="site-name" href="/">Inuk Blog</a></div></header><div class="wrapper"><article><div class="content"><p>If you've read <a href="https://www.inuk.blog/tag/vapor/">my other Vapor 4 posts</a>, chance is that you use Vapor 4 yourself, and if that's the case you might have found yourself looking for sibling (many to many) relations between models.</p><p>Siblings in Fluent 4 is really easy to work with, once you get the hang of property wrappers. To get siblings working we need a pivot model, and if we take an example of users who owns books, we can have the following pivot:</p><pre><code>     <span class="keyword">final class</span> UsersBooks: <span class="type">Model</span> {
+        <span class="keyword">static let</span> schema = <span class="string">"usersbook"</span>
+        
+        <span class="keyword">@ID</span>(key: <span class="string">"id"</span>)
+        <span class="keyword">var</span> id: <span class="type">Int</span>?
+        
+        <span class="keyword">@Parent</span>(key: <span class="string">"user_id"</span>)
+        <span class="keyword">var</span> user: <span class="type">User</span>
+        
+        <span class="keyword">@Parent</span>(key: <span class="string">"book_id"</span>)
+        <span class="keyword">var</span> book: <span class="type">Book</span>
+        
+        <span class="keyword">init</span>() {}
+        
+        <span class="keyword">init</span>(userID: <span class="type">Int</span>,<span class="string">"bookID: Int) {</span>
+            <span class="keyword">self</span>.$book.<span class="property">id</span> = bookID
+            <span class="keyword">self</span>.$user.<span class="property">id</span> = userID
+        }
+    }
+</code></pre><p>With each <code>@Parent</code> being the the models that needs to be related. This pivot allows us to bind multple books to multiple users, which I intend to use as books aren't exclusive to single users. Before we can bind this pivot to it's respective models, we also need to make a migration, I do it as follows:</p><pre><code>     <span class="keyword">extension</span> <span class="type">UsersBooks</span> {
+        <span class="keyword">struct</span> Migration: <span class="type">Fluent</span>.<span class="type">Migration</span> {
+            <span class="keyword">let</span> name = <span class="type">UsersBooks</span>.<span class="property">schema</span>
+            
+            <span class="keyword">func</span> prepare(on database: <span class="type">Database</span>) -&gt; <span class="type">EventLoopFuture</span>&lt;<span class="type">Void</span>&gt; {
+                database.<span class="call">schema</span>(<span class="type">UsersBooks</span>.<span class="property">schema</span>)
+                    .<span class="call">field</span>(<span class="string">"id"</span>, .<span class="dotAccess">int</span>, .<span class="dotAccess">identifier</span>(auto: <span class="keyword">true</span>))
+                    .<span class="call">field</span>(<span class="string">"user_id"</span>, .<span class="dotAccess">int</span>, .<span class="dotAccess">required</span>)
+                    .<span class="call">field</span>(<span class="string">"book_id"</span>, .<span class="dotAccess">int</span>, .<span class="dotAccess">required</span>)
+                    .<span class="call">create</span>()
+            }
+            
+            <span class="keyword">func</span> revert(on database: <span class="type">Database</span>) -&gt; <span class="type">EventLoopFuture</span>&lt;<span class="type">Void</span>&gt; {
+                database.<span class="call">schema</span>(<span class="type">UsersBooks</span>.<span class="property">schema</span>).<span class="call">delete</span>()
+            }
+        }
+    }
+</code></pre><p>And remember to register it in <code>configure.swift</code> like you would any model. When this is all done, it's timne to add these to the models that needs to be glued together:</p><pre><code>     <span class="keyword">final class</span> User: <span class="type">Model</span>, <span class="type">Content</span> {
+        <span class="keyword">static let</span> schema = <span class="string">"users"</span>
+        
+        <span class="keyword">@ID</span>(key: <span class="string">"id"</span>)
+        <span class="keyword">var</span> id: <span class="type">Int</span>?
+    
+        <span class="keyword">@Field</span>(key: <span class="string">"email"</span>)
+        <span class="keyword">var</span> email: <span class="type">String</span>
+    
+        <span class="keyword">@Field</span>(key: <span class="string">"password_hash"</span>)
+        <span class="keyword">var</span> passwordHash: <span class="type">String</span>
+        
+        <span class="keyword">@Field</span>(key: <span class="string">"userRole"</span>)
+        <span class="keyword">var</span> role: <span class="type">UserRoles</span>
+        
+        <span class="keyword">@Siblings</span>(through: <span class="type">UsersBooks</span>.<span class="keyword">self</span>, from: \.$user, to: \.$book)
+        <span class="keyword">var</span> books: [<span class="type">Book</span>]
+    
+        <span class="keyword">init</span>() { }
+    
+        <span class="keyword">init</span>(id: <span class="type">Int</span>? = <span class="keyword">nil</span>, name: <span class="type">String</span>, email: <span class="type">String</span>, passwordHash: <span class="type">String</span>, role: <span class="type">UserRoles</span> = .<span class="dotAccess">everyone</span>) {
+            <span class="keyword">self</span>.<span class="property">id</span> = id
+            <span class="keyword">self</span>.<span class="property">email</span> = email
+            <span class="keyword">self</span>.<span class="property">passwordHash</span> = passwordHash
+            <span class="keyword">self</span>.<span class="property">role</span> = role
+        }
+    }
+    
+    ...
+    
+    <span class="keyword">final class</span> Book: <span class="type">Model</span>, <span class="type">Content</span> {
+    	<span class="keyword">static let</span> schema = <span class="string">"books"</span>
+    
+    	<span class="keyword">@ID</span>(key: <span class="string">"id"</span>)
+    	<span class="keyword">var</span> id: <span class="type">Int</span>?
+    
+    	<span class="keyword">@Field</span>(key: <span class="string">"title"</span>)
+    	<span class="keyword">var</span> title: <span class="type">String</span>
+    
+    	<span class="keyword">@Siblings</span>(through: <span class="type">UsersBooks</span>.<span class="keyword">self</span>, from: \.$book, to: \.$user)
+    	<span class="keyword">var</span> owners: [<span class="type">User</span>]
+    
+    	<span class="keyword">init</span>() {}
+    
+    	<span class="keyword">init</span>(id: <span class="type">Int</span>? = <span class="keyword">nil</span>, title: <span class="type">String</span>) {
+    		<span class="keyword">self</span>.<span class="property">id</span> = id
+    		<span class="keyword">self</span>.<span class="property">title</span> = title
+    	}
+    }
+</code></pre><p>Note that <code>from</code> is the parent relation pointing to the current model, and <code>to</code> is the parent relation pointing to the related model. These two parent relations create a link from the current model to the target model via the pivot model. The siblings are not in the initilsation due to how they work in fluent, they're eager loaded which basically means they're automatically fetched by fluent on request.</p><p>Now that we have all this in place, we can finally find all books of a given user with the following:</p><pre><code>     <span class="keyword">func</span> usersCollection(req: <span class="type">Request</span>) <span class="keyword">throws</span> -&gt; <span class="type">EventLoopFuture</span>&lt;[<span class="type">Book</span>]&gt; {
+        <span class="keyword">let</span> userID: <span class="type">User</span>.<span class="type">IDValue</span>? = req.<span class="property">parameters</span>.<span class="call">get</span>(<span class="string">"id"</span>)
+        <span class="keyword">return</span> <span class="type">User</span>
+            .<span class="call">find</span>(userID, on: req.<span class="property">db</span>)
+            .<span class="call">unwrap</span>(or: <span class="type">Abort</span>(.<span class="dotAccess">notFound</span>))
+            .<span class="call">flatMap</span> {
+                <span class="keyword">try</span>! $0.$books
+                        .<span class="call">query</span>(on: req.<span class="property">db</span>)
+                        .<span class="call">all</span>()
+            }
+    }
+</code></pre><p>While the <code>try!</code> looks scary, there is no need to worry; if there is no books for a given user, it'll just return <code>[]</code>, and we no there's a database connection because of earlier connection. When we need to attach a book to a owner, this method is what it takes:</p><pre><code>     <span class="keyword">func</span> addBook(req: <span class="type">Request</span>) <span class="keyword">throws</span> -&gt; <span class="type">EventLoopFuture</span>&lt;[<span class="type">Book</span>]&gt; {
+        <span class="keyword">guard let</span> userID: <span class="type">User</span>.<span class="type">IDValue</span> = req.<span class="property">parameters</span>.<span class="call">get</span>(<span class="string">"id"</span>) <span class="keyword">else</span> { <span class="keyword">throw</span> <span class="type">Abort</span>(.<span class="dotAccess">notFound</span>) }
+        <span class="keyword">guard let</span> bookID: <span class="type">Book</span>.<span class="type">IDValue</span> = <span class="keyword">try</span>? req.<span class="property">content</span>.<span class="call">decode</span>(<span class="type">Book</span>.<span class="type">PurchaseContent</span>.<span class="keyword">self</span>).<span class="property">id</span> <span class="keyword">else</span> { <span class="keyword">throw</span> <span class="type">Abort</span>(.<span class="dotAccess">notFound</span>) }
+        <span class="keyword">_</span> = <span class="type">UsersBook</span>(userID: userID, bookID: bookID).<span class="call">save</span>(on: req.<span class="property">db</span>)
+        <span class="keyword">return try self</span>.<span class="call">usersCollection</span>(req: req)
+    }
+</code></pre><p>It's worth considering making an extension to the model <code>User</code> with this function, so we don't need to pass parameters around. The <code>_ =</code> is to silence a warning, and I return <code>usersCollection</code> because I want to return something, alternatively it's worth consider return <code>200 success</code> or something to the like.</p><h2>Special Thanks</h2><p><a href="https://github.com/tanner0101">Tanner Nelson</a> for provding help on the <a href="https://discordapp.com/invite/vapor">Discord</a>.</p></div><span>Tagged with: </span><ul class="tag-list"><li><a href="/tags/coding">coding</a></li><li><a href="/tags/education">Education</a></li><li><a href="/tags/how-to">how to</a></li><li><a href="/tags/linux">linux</a></li><li><a href="/tags/swift">swift</a></li><li><a href="/tags/vapor">vapor</a></li></ul></article></div><footer><p>Proudly generated using <a href="https://github.com/johnsundell/publish">Publish</a></p><p><a href="https://discord.gg/CxPyCCJ">Discord</a> | <a href="/feed.rss">RSS</a></p></footer></body></html>

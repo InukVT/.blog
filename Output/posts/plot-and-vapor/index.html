@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="og:site_name" content="Inuk Blog"/><link rel="canonical" href="https://www.inuk.blog/posts/plot-and-vapor"/><meta name="twitter:url" content="https://www.inuk.blog/posts/plot-and-vapor"/><meta name="og:url" content="https://www.inuk.blog/posts/plot-and-vapor"/><title>Plot in Vapor | Inuk Blog</title><meta name="twitter:title" content="Plot in Vapor | Inuk Blog"/><meta name="og:title" content="Plot in Vapor | Inuk Blog"/><meta name="description" content="Plot + Vapor = <3"/><meta name="twitter:description" content="Plot + Vapor = <3"/><meta name="og:description" content="Plot + Vapor = <3"/><meta name="twitter:card" content="summary"/><link rel="stylesheet" href="/styles.css" type="text/css"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><link rel="shortcut icon" href="/images/favicon.png" type="image/png"/><link rel="alternate" href="/feed.rss" type="application/rss+xml" title="Subscribe to Inuk Blog"/></head><body class="item-page"><header><div class="wrapper"><a class="site-name" href="/">Inuk Blog</a></div></header><div class="wrapper"><article><div class="content"><p><a href="https://www.swiftbysundell.com">John Sundell</a> has released his DSL for HTML written Swift <a href="https://github.com/JohnSundell/Plot">Plot</a>. You may have wondered "how do I make it work with Vapor?" as did I, when I found <a href="https://medium.com/@andreabellotto88/how-to-use-plot-in-vapor-3-0-404316ce24c0">this article</a> telling how to make this work. The article is written for Vapor 3 and I want to focus on Vapor 4.</p><p>For beginner we need to make sure that we can even use Plot, to to this, add Plot to you Package.swift:</p><pre><code>     <span class="keyword">let</span> package = <span class="type">Package</span>(
+      name: <span class="string">"Manga"</span>,	
+      dependencies: [
+        ...
+        .<span class="call">package</span>(url: <span class="string">"https://github.com/JohnSundell/Plot.git"</span>, from: <span class="string">"0.5.0"</span>)
+        ...	
+      ],
+      targets: [
+        .<span class="call">target</span>(name: <span class="string">"App"</span>, dependencies: [
+        	...
+        	<span class="string">"Plot"</span>,
+        	...
+      	]),
+      ...
+      ]
+    )
+</code></pre><p>You can now begin using Plot when you pulled in your packages. The clever and impatient might notic that <code>func myRouter(req:) throws -&gt; EventLoopFuture&lt;HTML&gt;</code> is going throwing compile errors, so to support the <code>EventLoopFuture&lt;HTML&gt;</code> we need to extend <code>HTML</code> and add two functions like so:</p><pre><code>     <span class="keyword">import</span> Plot
+    <span class="keyword">import</span> Vapor
+    
+    <span class="keyword">extension</span> <span class="type">HTML</span>: <span class="type">ResponseEncodable</span> {
+            <span class="keyword">public func</span> encodeResponse(for request: <span class="type">Request</span>) -&gt; <span class="type">EventLoopFuture</span>&lt;<span class="type">HTML</span>&gt; {
+            request.<span class="property">eventLoop</span>.<span class="property">submit</span>{<span class="keyword">self</span>}
+        }
+        
+        <span class="keyword">public func</span> encodeResponse(for req: <span class="type">Request</span>) -&gt; <span class="type">EventLoopFuture</span>&lt;<span class="type">Response</span>&gt; {
+            <span class="keyword">let</span> res = <span class="type">Response</span>(headers: [<span class="string">"content-type"</span>: <span class="string">"text/html; charset=utf-8"</span>], body: .<span class="keyword">init</span>(string: <span class="keyword">self</span>.<span class="call">render</span>()))
+            <span class="keyword">return</span> res.<span class="call">encodeResponse</span>(for: req)
+        }
+    }
+</code></pre><p>The first functions allows us to easily write a route that looks a little something like, and omit the <code>.render()</code> as that'be handled by the eventloop.</p><pre><code>     <span class="keyword">func</span> myRoute(req: <span class="type">Request</span>) <span class="keyword">throws</span> -&gt; <span class="type">EventLoopFuture</span>&lt;<span class="type">HTML</span>&gt; {
+        <span class="type">HTML</span>(.<span class="call">body</span>(.<span class="call">p</span>(<span class="string">"Hello World!"</span>))).<span class="call">encodeResponse</span>(for: req)
+    }
+</code></pre><p>But without the latter function, we can't conform to <code>ResponseEncodable</code> which is important for the <code>EventLoopFuture</code>. The function also handles rendering the HTML for us, so we don't have to. And now you've added this extension, you can use Plot as much as you want in Vapor 4, just remember to chain <code>.encodeResponse(req)</code>!</p><p>Thanks to the <a href="[https://discordapp.com/invite/vapor](https://discordapp.com/invite/vapor">Vapor Discord</a> for typo fixes.</p></div><span>Tagged with: </span><ul class="tag-list"><li><a href="/tags/apple">apple</a></li><li><a href="/tags/coding">coding</a></li><li><a href="/tags/wwdc">WWDC</a></li><li><a href="/tags/vapor">vapor</a></li></ul></article></div><footer><p>Proudly generated using <a href="https://github.com/johnsundell/publish">Publish</a></p><p><a href="https://discord.gg/CxPyCCJ">Discord</a> | <a href="/feed.rss">RSS</a></p></footer></body></html>

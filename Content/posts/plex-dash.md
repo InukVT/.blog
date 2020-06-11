@@ -7,6 +7,8 @@ tags: plex, home server, iOS, nas
 description: Wanting to rant about difficulty of ripping DRM from iTunes, Plex announced something good.
 ---
 
+# Plex Dash
+
 I initially wanted to spend this month's server post to complain about the state of ripping DRM from iTunes movies, but then Plex [released](https://www.plex.tv/blog/two-delicious-new-apps-from-plex-labs/) their [Dash app](https://apps.apple.com/dk/app/plexamp/id1500797510). In short, it's taking the management of your server into your pocket, and currently, it's in a very early and simple stage.
 
 # See what's playing

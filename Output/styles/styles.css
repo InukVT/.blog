@@ -182,6 +182,20 @@ footer {
     .wrapper {
         padding: 40px 20px;
     }
+    
+    .content > p > img {
+        max-width: device-width;
+        max-height: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+        
+    .content > img {
+        max-width: device-width;
+        max-height: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 
 

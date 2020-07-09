@@ -221,7 +221,10 @@ private extension Node where Context == HTML.BodyContext {
                .a(
                 .text("RSS"),
                 .href("/feed.rss")
-                ))
+                )),
+            // Ko-Fi stuff
+            .script(.src("https://ko-fi.com/widgets/widget_2.js")),
+            .script("kofiwidget2.init('Support Me on Ko-fi', '#e09728', 'X8X416VYG');kofiwidget2.draw();")
         )
     }
 }

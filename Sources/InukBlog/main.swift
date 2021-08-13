@@ -25,12 +25,13 @@ struct InukBlog: Website {
 }
 
 // This will generate your website using the Inuk Blog theme:
-try InukBlog().publish(using: [
-    .installPlugin(.splash(withClassPrefix: "")),
-    .installPlugin(.twitter()),
-    .addMarkdownFiles(),
-    .copyResources(),
-    .generateHTML(withTheme: .inukBlog),
-    .generateRSSFeed(including: [.posts]),
-    .generateSiteMap()
+try InukBlog().publish(
+    using: [
+        .installPlugin(.splash(withClassPrefix: "")),
+        .installPlugin(.twitter()),
+        .addMarkdownFiles(),
+        .copyResources(),
+        .generateHTML(withTheme: .inukBlog),
+        .generateRSSFeed(including: [.posts]),
+        .generateSiteMap()
 ])

@@ -7,7 +7,7 @@ tags: vapor, coding, swift, apple, linux
 description: If you know about enums, you probably also get why they're handy and why I thought about using them for my User model, but but this was too difficult to implement in Fluent 4.
 ---
 
-If you know about enums, you probably also get why they're handy[manga.dk](manga.dk)and why I thought about using them for my `User` model, but but this was too difficult to implement in Fluent 4.
+If you know about enums, you probably also get why they're handy and why I thought about using them for my `User` model, but but this was too difficult to implement in Fluent 4.
 
 ## What is an enum?
 

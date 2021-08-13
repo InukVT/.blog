@@ -1,0 +1,130 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="og:site_name" content="Inuk Blog"/><link rel="canonical" href="https://www.inuk.blog/posts/environmentobjects-and-document-picker"/><meta name="twitter:url" content="https://www.inuk.blog/posts/environmentobjects-and-document-picker"/><meta name="og:url" content="https://www.inuk.blog/posts/environmentobjects-and-document-picker"/><title>EnvironmentObjects and UIDocumentPicker | Inuk Blog</title><meta name="twitter:title" content="EnvironmentObjects and UIDocumentPicker | Inuk Blog"/><meta name="og:title" content="EnvironmentObjects and UIDocumentPicker | Inuk Blog"/><meta name="description" content="Need to access EnvironmentObjects in UIDocumentPicker or any other UIKit view? Read more to know how I did it."/><meta name="twitter:description" content="Need to access EnvironmentObjects in UIDocumentPicker or any other UIKit view? Read more to know how I did it."/><meta name="og:description" content="Need to access EnvironmentObjects in UIDocumentPicker or any other UIKit view? Read more to know how I did it."/><meta name="twitter:card" content="summary"/><link rel="stylesheet" href="/styles.css" type="text/css"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><link rel="shortcut icon" href="/images/favicon.png" type="image/png"/><link rel="alternate" href="/feed.rss" type="application/rss+xml" title="Subscribe to Inuk Blog"/></head><body class="item-page"><header><div class="wrapper"><a class="site-name" href="/">Inuk Blog</a></div></header><div class="wrapper"><article><div class="content"><p>For my current project, I needed to have some UIKit code which manipulated an <code>@EnvironmentObject</code>, but unfortunately UIKit doesn't know aboutthis property wrapper, I had to find an alternative. The <code>@EnvironmentObject</code> in question, was to be manipulated by a <code>UIDocumentPickerDelagate</code>'s <code>documentPicker(_:)</code>, this specific method gets called when a file gets picked, and I wanted to tell my <code>@EnvironmentObject</code> that a file was picked.</p><p>My solution is to bring the handling of selected documents up into SwiftUI. For starters, let me show you the simplest part of my code, the picker delegate:</p><pre><code><span class="keyword">typealias</span> URLS = ([<span class="type">URL</span>]) -&gt; ()
+<span class="keyword">typealias</span> voidFunc = () -&gt; ()
+
+<span class="keyword">class</span> DocumentDelagate: <span class="type">UIView</span> ,<span class="type">UIDocumentPickerDelegate</span> {
+    <span class="keyword">var</span> onOpen: <span class="type">URLS</span> = { <span class="call">print</span>($0) }
+    <span class="keyword">var</span> onCancel: voidFunc = {}
+    
+    <span class="keyword">func</span> documentPicker(<span class="keyword">_</span> controller: <span class="type">UIDocumentPickerViewController</span>,
+                        didPickDocumentsAt urls: [<span class="type">URL</span>]) {
+        <span class="call">onOpen</span>(urls)
+    }
+    
+    <span class="keyword">func</span> documentPickerWasCancelled(<span class="keyword">_</span> controller: <span class="type">UIDocumentPickerViewController</span>) {
+        <span class="call">onCancel</span>()
+    }
+    
+}
+
+</code></pre><p>It's a simple subclass of <code>UIView</code> and <code>UIDocumentPickerDelagate</code>. The reason I subclass <code>UIView</code> is so I don't have to add a lot of protocol stubs from <code>NSProtocol</code>. This unfortunately means making a custom init is a bit difficult, as such I gave my callbacks default values, but fret not, this is changed in my UIKit SwiftUI wrapper.</p><pre><code><span class="keyword">struct</span> DocumentPickerController: <span class="type">UIViewControllerRepresentable</span> {
+    
+    <span class="keyword">typealias</span> UIViewControllerType = <span class="type">DocumentPicker</span>
+    <span class="keyword">let</span> picker: <span class="type">UIViewControllerType</span>
+    
+    <span class="keyword">init</span>(documentTypes: [<span class="type">String</span>],
+         onOpen:  <span class="keyword">@escaping</span> <span class="type">URLS</span>,
+         onCancel: <span class="keyword">@escaping</span> voidFunc) {
+        <span class="keyword">self</span>.<span class="property">picker</span> = <span class="type">UIViewControllerType</span>(documentTypes: documentTypes, in: .<span class="dotAccess">open</span>)
+        <span class="keyword">let</span> delagate = <span class="type">DocumentDelagate</span>()
+        delagate.<span class="property">onOpen</span> = onOpen
+        delagate.<span class="property">onCancel</span> = onCancel
+        picker.<span class="property">documentDelegate</span> = delagate
+    }
+    
+    <span class="keyword">func</span> updateUIViewController(<span class="keyword">_</span> uiViewController: <span class="type">UIViewControllerType</span>, context: <span class="type">Context</span>) {
+        
+    }
+    
+    <span class="keyword">func</span> makeUIViewController(context: <span class="type">Context</span>) -&gt; <span class="type">UIViewControllerType</span> {
+        picker
+    }
+    
+}
+</code></pre><p>The type alias is for quicker iterations and testing between needing to supclass the pickerview or not. As I have a reference to the delagate in the supclassed document picker, I only need it in <code>init</code> so I can mmodify the callback variables. And then I instantiate the supclassed document picker, as well as return the picker in <code>makeUIViewController(context:)</code>, as you can see, I've still yet to bring in <code>@EnvironmentObject</code>, that'll come later. The subclassed document picker is basic, looks as following:</p><pre><code><span class="keyword">class</span> DocumentPicker: <span class="type">UIDocumentPickerViewController</span> {
+    <span class="keyword">var</span> documentDelegate: <span class="type">UIDocumentPickerDelegate</span>? = <span class="keyword">nil
+    
+    override func</span> viewDidLoad() {
+        <span class="keyword">super</span>.<span class="call">viewDidLoad</span>()
+        
+        <span class="keyword">self</span>.<span class="property">delegate</span> = <span class="keyword">self</span>.<span class="property">documentDelegate</span>
+    }
+}
+</code></pre><p>The supclassed document picker is not interesting. All it does is keep a strong instance of the delagate and assign it to its superclass's weak instance of the delagate. This is so the delagate is not deallocated when needed. And to finish it all off, I wrap this view into a neat little SwiftUI <code>View</code> which looks as following:</p><pre><code><span class="keyword">struct</span> DocumentPickerButton&lt;Label: <span class="type">View</span>&gt;: <span class="type">View</span> {
+    <span class="keyword">@State
+    var</span> showPicker = <span class="keyword">false
+    
+    private let</span> pickerController: <span class="type">DocumentPickerController</span>
+    <span class="keyword">private let</span> onOpen: <span class="type">URLS</span>
+    <span class="keyword">private let</span> onCancel: voidFunc
+    <span class="keyword">private let</span> view: () -&gt; (<span class="type">Label</span>)
+    
+    <span class="keyword">init</span>(documentTypes: [<span class="type">String</span>],
+         onOpen: <span class="keyword">@escaping</span> ([<span class="type">URL</span>]) -&gt; (),
+         onCancel: <span class="keyword">@escaping</span> () -&gt; () = {},
+         <span class="keyword">@ViewBuilder</span> view: <span class="keyword">@escaping</span> () -&gt; (<span class="type">Label</span>))
+    {
+        <span class="keyword">self</span>.<span class="property">documentTypes</span> = documentTypes
+        <span class="keyword">self</span>.<span class="property">onOpen</span> = onOpen
+        <span class="keyword">self</span>.<span class="property">onCancel</span> = onCancel
+        <span class="keyword">self</span>.<span class="property">view</span> = view
+    }
+    
+    <span class="keyword">var</span> body: <span class="keyword">some</span> <span class="type">View</span> {
+        <span class="type">Button</span>(action: {<span class="keyword">self</span>.<span class="property">showPicker</span>.<span class="call">toggle</span>() }) {
+            <span class="call">view</span>()
+        }
+        .<span class="call">sheet</span>(isPresented: <span class="keyword">self</span>.$showPicker) {
+            <span class="type">DocumentPickerController</span>(documentTypes: <span class="keyword">self</span>.<span class="property">documentTypes</span>,
+                                     onOpen: <span class="keyword">self</span>.<span class="property">onOpen</span>,
+                                     onCancel: <span class="keyword">self</span>.<span class="property">onCancel</span>)
+        }
+    }
+}
+</code></pre><p>This looks a bit complicated but, but let's break it down a bit. The init takes the callback, and as not everyone needs have an <code>onCancel</code> handler, I made a default empty implementation. Reason I didn't instantiate the picker here, is because I don't want the picker view polluting in the background, it might not matter but alas. The button is an action, which takes the <code>view</code> from the initializer as label. I then spawn the document picker, when the button is pressed. The document browser view from the picker is in a sheet, this is to closer match the look and behaviour from UIKit, you can of course have the browser in any view you prefer.</p><p>And I promised some <code>@EnvironmentObject</code>, how did I use that? Once the document picker view is a SiftUI view, I can bring in the object like I usually would, and the way I call <code>DocumentPickerButton</code> in my app, looks a little like this:</p><pre><code><span class="keyword">struct</span> ContentView: <span class="type">View</span> {
+    <span class="keyword">@EnvironmentObject var</span> player: <span class="type">Player</span>
+    <span class="keyword">var</span> body: <span class="keyword">some</span> <span class="type">View</span> {
+        <span class="type">NavigationView</span> {
+            <span class="type">List</span> {
+                <span class="type">ForEach</span>(player.<span class="property">queue</span>, id: \.<span class="keyword">self</span>) { song <span class="keyword">in</span>
+                    <span class="type">SongCellView</span>(song: song)
+                }
+            }.<span class="call">onAppear</span> {
+                <span class="type">UITableView</span>.<span class="call">appearance</span>()
+                    .<span class="dotAccess">separatorStyle</span> = .<span class="dotAccess">none</span>
+            }
+            .<span class="call">navigationBarTitle</span>(<span class="type">Text</span>(<span class="string">"Song"</span>))
+            .<span class="call">navigationBarItems</span>(trailing: 
+                <span class="type">DocumentPickerButton</span>(documentTypes: [<span class="string">"public.mp3"</span>],
+                                     onOpen: <span class="keyword">self</span>.<span class="property">openSong</span>){
+                    <span class="type">Image</span>(systemName: <span class="string">"plus.circle.fill"</span>)
+                        .<span class="call">resizable</span>()
+            } )
+        }
+        
+    }
+    
+    <span class="keyword">func</span> openSong (urls: [<span class="type">URL</span>]) -&gt; () {
+        <span class="call">print</span>(<span class="string">"Reading URLS"</span>)
+        urls.<span class="call">forEach</span> { url <span class="keyword">in
+            guard</span> url.<span class="call">startAccessingSecurityScopedResource</span>() <span class="keyword">else</span> {
+                <span class="call">print</span>(<span class="string">"Failed to open the file"</span>)
+                <span class="keyword">return</span>
+            }
+            <span class="call">print</span>(url)
+            <span class="keyword">defer</span> { url.<span class="call">stopAccessingSecurityScopedResource</span>() }
+            
+            <span class="keyword">guard let</span> bookmark = <span class="keyword">try</span>? url.<span class="call">bookmarkData</span>() <span class="keyword">else</span> {
+                <span class="keyword">return</span>
+            }
+            
+            <span class="keyword">let</span> defaults = <span class="type">UserDefaults</span>.<span class="property">standard</span>
+            
+            <span class="keyword">var</span> array = defaults.<span class="call">array</span>(forKey: <span class="string">"Songs"</span>) <span class="keyword">as</span>? [<span class="type">Data</span>]
+            array?.<span class="call">append</span>(bookmark)
+            defaults.<span class="call">set</span>(array, forKey: <span class="string">"Songs"</span>)
+            
+            <span class="keyword">self</span>.<span class="property">player</span>.<span class="property">song</span> = .<span class="call">AVPlayer</span>(.<span class="keyword">init</span>(url: url))
+        }
+    }
+}
+</code></pre><p>And this is how I brought <code>@EnvironmentObject</code> into the world of UIKit.</p></div><span>Tagged with: </span><ul class="tag-list"><li><a href="/tags/swift">swift</a></li><li><a href="/tags/swiftui">swiftui</a></li><li><a href="/tags/ios">iOS</a></li><li><a href="/tags/coding">coding</a></li><li><a href="/tags/how-to">how to</a></li></ul></article></div><footer><p>Proudly generated using <a href="https://github.com/johnsundell/publish">Publish</a></p><p><a href="https://discord.gg/CxPyCCJ">Discord</a> | <a href="/feed.rss">RSS</a></p><script src="https://ko-fi.com/widgets/widget_2.js"></script><script>kofiwidget2.init('Support Me on Ko-fi', '#e09728', 'X8X416VYG');kofiwidget2.draw();</script></footer></body></html>
